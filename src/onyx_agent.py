@@ -226,3 +226,35 @@ def chat_with_onyx_stream(user_message: str, session_id: str = "default", user_i
     history.append({"role": "assistant", "content": full_response})
     
     return full_response
+
+if __name__ == "__main__":
+    print("=" * 50)
+    print("Onyx is online ⚡")
+    print("(your code & programming specialist)")
+    print("Type 'exit' to quit, 'clear' to reset memory")
+    print("=" * 50)
+    print()
+    
+    session_id = "default"
+    user_id = "test_user"
+    
+    while True:
+        user_input = input("You: ").strip()
+        
+        if user_input.lower() in ["exit", "quit", "bye"]:
+            print("Onyx: Stay sharp. 🖤")
+            break
+        
+        if user_input.lower() == "clear":
+            chat_histories[session_id] = []
+            print("Onyx: Memory wiped. Clean slate. ⚡")
+            continue
+        
+        if not user_input:
+            continue
+        
+        try:
+            response = chat_with_onyx_stream(user_input, session_id, user_id)
+            print()
+        except Exception as e:
+            print(f"Onyx: Something broke... {e}\n")
