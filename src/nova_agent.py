@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 from langchain_tavily import TavilySearch
 from langchain.agents import create_agent  
+import time
 
 load_dotenv()
 
@@ -83,29 +84,47 @@ def chat_with_nova(user_message: str, session_id: str = "default") -> str:
     return reply
 
 def chat_with_nova_stream(user_message: str, session_id: str = "default"):
-   
-    #Stream Nova's response token by token.
+    
+    #Stream Nova's response token by token. 
     history = get_or_create_history(session_id)
     messages = history + [{"role": "user", "content": user_message}]
     
     full_response = ""
+    showed_searching = False
     print("Nova: ", end="", flush=True)
     
-    # stream_mode="messages" gives us token-level streaming
     for chunk, metadata in agent.stream({"messages": messages}, stream_mode="messages"):
-        # chunk is an AIMessageChunk with partial content
+        # Check if this is a tool call (searching)
+        if hasattr(chunk, "tool_calls") and chunk.tool_calls and not showed_searching:
+            print("🔍 Searching...\nNova: ", end="", flush=True)
+            showed_searching = True
+            continue
+        
+        # Skip tool responses (the raw JSON)
+        if hasattr(chunk, "type") and chunk.type == "tool":
+            continue
+            
+        # Skip if chunk is tool output (has name attribute = tool name)
+        if hasattr(chunk, "name") and chunk.name:
+            continue
+        
+        # Only print actual assistant content
         if hasattr(chunk, "content") and chunk.content:
+            # Skip if content looks like JSON tool output
+            if chunk.content.strip().startswith('{"query"'):
+                continue
+                
             print(chunk.content, end="", flush=True)
             full_response += chunk.content
+            time.sleep(0.07)
     
-    print()  # New line after streaming is done
+    print()  # New line after finishing response
     
     # Save to history
     history.append({"role": "user", "content": user_message})
     history.append({"role": "assistant", "content": full_response})
     
     return full_response
-
 
 # MAIN LOOP (for testing in terminal)
 if __name__ == "__main__":
