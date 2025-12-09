@@ -2,11 +2,7 @@ import os
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 from langchain_community.tools.tavily_search import TavilySearchResults
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain.agents import AgentExecutor, create_openai_tools_agent
-from langchain_community.chat_message_histories import ChatMessageHistory
-from langchain_core.runnables.history import RunnableWithMessageHistory
-
+from langchain.agents import create_agent  
 
 load_dotenv()
 
@@ -48,44 +44,79 @@ GUIDELINES:
 - Be honest if you're not sure about something and make sure you mention it to the user
 """
 
-# ChatPromptTemplate assembles the full prompt sent to the model
-prompt = ChatPromptTemplate.from_messages([
-    ("system", system_prompt),                         # Nova's personality (always first)
-    MessagesPlaceholder(variable_name="chat_history"), # past messages go here
-    ("human", "{input}"),                              # user's current message
-    MessagesPlaceholder(variable_name="agent_scratchpad")  # agent's internal thinking
-])
-
-# Create the agent - this connects the LLM with the tools and prompt. The agent can "decide" when to use tools based on the user's question
-agent = create_openai_tools_agent(
-    llm=llm,        
-    tools=tools,    
-    prompt=prompt   
-)
-
-# AgentExecutor actually runs the agent and handles the tool-calling loop
-agent_executor = AgentExecutor(
-    agent=agent,
+# NEW: create_agent is much simpler - just pass model, tools, and system_prompt
+# No need for ChatPromptTemplate, AgentExecutor, or agent_scratchpad anymore
+agent = create_agent(
+    model=llm,
     tools=tools,
-    verbose=True,           # shows agent's thinking (useful for debugging)
-    handle_parsing_errors=True,  # won't crash on weird outputs
-    max_iterations=5        # safety limit so it doesn't loop forever
+    system_prompt=system_prompt
 )
-# Example flow: user asks about news → agent decides to search → gets results → responds
 
+# Store conversation histories per session
 chat_histories = {}
 
-def get_session_history(session_id: str):
-    #Gets or creates a chat history for a session.Each user/conversation can have their own session_id.
+def get_or_create_history(session_id: str) -> list:
+    """Gets or creates message history for a session."""
     if session_id not in chat_histories:
-        chat_histories[session_id] = ChatMessageHistory()
+        chat_histories[session_id] = []
     return chat_histories[session_id]
 
-# Wrap the agent with memory capabilities
-agent_with_memory = RunnableWithMessageHistory(
-    agent_executor,
-    get_session_history,
-    input_messages_key="input",          # where user message goes
-    history_messages_key="chat_history"  # where past messages get injected
-)
-# This automatically loads past messages and saves new ones after each chat
+
+def chat_with_nova(user_message: str, session_id: str = "default") -> str:
+    """
+    Send a message to Nova and get a response.
+    """
+    # Get this session's history
+    history = get_or_create_history(session_id)
+    
+    # Build messages: history + current message
+    messages = history + [{"role": "user", "content": user_message}]
+    
+    # Invoke the agent
+    response = agent.invoke({"messages": messages})
+    
+    # Extract the reply (last message from the agent)
+    reply = response["messages"][-1].content
+    
+    # Save to history
+    history.append({"role": "user", "content": user_message})
+    history.append({"role": "assistant", "content": reply})
+    
+    return reply
+
+
+# MAIN LOOP (for testing in terminal)
+if __name__ == "__main__":
+    print("=" * 50)
+    print("Nova is online 😎")
+    print("(now with web search powers)")
+    print("Type 'exit' to quit, 'clear' to reset memory")
+    print("=" * 50)
+    print()
+    
+    session_id = "default"
+    
+    while True:
+        user_input = input("You: ").strip()
+        
+        # Exit commands
+        if user_input.lower() in ["exit", "quit", "bye", "cya", "goodbye"]:
+            print("Nova: Catch you later! ✨")
+            break
+        
+        # Clear memory
+        if user_input.lower() == "clear":
+            chat_histories[session_id] = []
+            print("Nova: Memory cleared! Fresh start 🧹")
+            continue
+        
+        # Skip empty input
+        if not user_input:
+            continue
+        
+        # Get response from Nova
+        try:
+            response = chat_with_nova(user_input, session_id)
+            print(f"Nova: {response}\n")
+        except Exception as e:
+            print(f"Nova: Something broke... {e}\n")
