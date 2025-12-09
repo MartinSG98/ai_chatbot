@@ -72,3 +72,58 @@ def read_code_file(user_id: str, filename: str) -> str:
         return f"File not found: {filename}"
     except Exception as e:
         return f"Couldn't read file: {e}"
+    
+@tool
+def list_code_files(user_id: str) -> str:
+    """
+    List all code files for this user.
+    
+    Use this when someone asks:
+    - What code files exist
+    - Show my scripts
+    - What have I created
+    
+    Args:
+        user_id: The user's unique identifier
+    """
+    try:
+        folder = get_user_folder(user_id)
+        files = os.listdir(folder)
+        
+        if not files:
+            return "📁 No code files yet. Ask me to create one!"
+        
+        file_list = "\n".join(f"  - {f}" for f in files)
+        return f"📁 Your code files:\n{file_list}"
+    except Exception as e:
+        return f"Couldn't list files: {e}"
+
+
+@tool
+def delete_code_file(user_id: str, filename: str) -> str:
+    """
+    Delete a code file from the user's folder.
+    
+    Use this when someone asks to:
+    - Delete/remove a file
+    - Clean up code files
+    
+    Args:
+        user_id: The user's unique identifier
+        filename: Name of the file to delete
+    """
+    try:
+        folder = get_user_folder(user_id)
+        filepath = os.path.join(folder, filename)
+        
+        if os.path.exists(filepath):
+            os.remove(filepath)
+            return f"🗑️ Deleted: {filename}"
+        else:
+            return f"File not found: {filename}"
+    except Exception as e:
+        return f"Couldn't delete file: {e}"
+
+
+# Onyx's toolkit
+tools = [create_code_file, read_code_file, list_code_files, delete_code_file]
