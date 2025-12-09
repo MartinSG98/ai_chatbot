@@ -158,3 +158,11 @@ agent = create_agent(
     tools=tools,
     system_prompt=system_prompt
 )
+
+chat_histories = {}
+
+def get_or_create_history(session_id: str) -> list:
+    #Gets or creates message history for a session.
+    if session_id not in chat_histories:
+        chat_histories[session_id] = []
+    return chat_histories[session_id]
