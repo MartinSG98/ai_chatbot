@@ -1,19 +1,21 @@
 import os
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
-from langchain_community.tools.tavily_search import TavilySearchResults
+from langchain_tavily import TavilySearch
 from langchain.agents import create_agent  
+import time
 
 load_dotenv()
 
 # Initialize the ChatOpenAI client with the specified model and parameters
 llm = ChatOpenAI(
     model="gpt-4.1-mini",
-    temperature=0.7
+    temperature=0.7,
+    streaming=True
 )
 
 # Configure the Tavily search tool for up-to-date information retrieval
-search_tool = TavilySearchResults(
+search_tool = TavilySearch(
     max_results=3,
     description=(
         "Search the web for current events, recent news, or any information "
@@ -61,11 +63,8 @@ def get_or_create_history(session_id: str) -> list:
         chat_histories[session_id] = []
     return chat_histories[session_id]
 
-
+#Send a message to Nova and get a response.
 def chat_with_nova(user_message: str, session_id: str = "default") -> str:
-    """
-    Send a message to Nova and get a response.
-    """
     # Get this session's history
     history = get_or_create_history(session_id)
     
@@ -84,6 +83,48 @@ def chat_with_nova(user_message: str, session_id: str = "default") -> str:
     
     return reply
 
+def chat_with_nova_stream(user_message: str, session_id: str = "default"):
+    
+    #Stream Nova's response token by token. 
+    history = get_or_create_history(session_id)
+    messages = history + [{"role": "user", "content": user_message}]
+    
+    full_response = ""
+    showed_searching = False
+    print("Nova: ", end="", flush=True)
+    
+    for chunk, metadata in agent.stream({"messages": messages}, stream_mode="messages"):
+        # Check if this is a tool call (searching)
+        if hasattr(chunk, "tool_calls") and chunk.tool_calls and not showed_searching:
+            print("🔍 Searching...\nNova: ", end="", flush=True)
+            showed_searching = True
+            continue
+        
+        # Skip tool responses (the raw JSON)
+        if hasattr(chunk, "type") and chunk.type == "tool":
+            continue
+            
+        # Skip if chunk is tool output (has name attribute = tool name)
+        if hasattr(chunk, "name") and chunk.name:
+            continue
+        
+        # Only print actual assistant content
+        if hasattr(chunk, "content") and chunk.content:
+            # Skip if content looks like JSON tool output
+            if chunk.content.strip().startswith('{"query"'):
+                continue
+                
+            print(chunk.content, end="", flush=True)
+            full_response += chunk.content
+            time.sleep(0.07)
+    
+    print()  # New line after finishing response
+    
+    # Save to history
+    history.append({"role": "user", "content": user_message})
+    history.append({"role": "assistant", "content": full_response})
+    
+    return full_response
 
 # MAIN LOOP (for testing in terminal)
 if __name__ == "__main__":
@@ -116,7 +157,7 @@ if __name__ == "__main__":
         
         # Get response from Nova
         try:
-            response = chat_with_nova(user_input, session_id)
-            print(f"Nova: {response}\n")
+            response = chat_with_nova_stream(user_input, session_id)
+            print()  # extra line for spacing
         except Exception as e:
             print(f"Nova: Something broke... {e}\n")
