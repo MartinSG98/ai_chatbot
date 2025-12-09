@@ -139,7 +139,7 @@ if __name__ == "__main__":
         user_input = input("You: ").strip()
         
         # Exit commands
-        if user_input.lower() in ["exit", "quit", "bye"]:
+        if user_input.lower() in ["exit", "quit", "bye", "goodbye", "cya"]:
             print("Wolf: Until next time! 🐺")
             break
         
