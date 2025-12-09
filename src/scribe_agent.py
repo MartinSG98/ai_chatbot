@@ -38,3 +38,25 @@ def create_document(filename: str, content: str) -> str:
         return f"✅ Document created: {filepath}"
     except Exception as e:
         return f"Couldn't create document: {e}"
+    
+@tool
+def read_document(filepath: str) -> str:
+    """
+    Read and return the contents of a text file.
+    
+    Use this when someone asks to:
+    - Read a file
+    - Show contents of a document
+    - Review what's in a file
+    
+    Args:
+        filepath: Path to the file to read
+    """
+    try:
+        with open(filepath, "r", encoding="utf-8") as f:
+            content = f.read()
+        return f"📄 Contents of {filepath}:\n\n{content}"
+    except FileNotFoundError:
+        return f"File not found: {filepath}"
+    except Exception as e:
+        return f"Couldn't read file: {e}"
