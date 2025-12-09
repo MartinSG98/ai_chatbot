@@ -88,21 +88,38 @@ def chat_with_wolf(user_message: str, session_id: str = "default") -> str:
     return reply
 
 def chat_with_wolf_stream(user_message: str, session_id: str = "default"):
-    #Stream Wolf's response token by token. 
+    
+    #Stream Wolf's response with clean output.
     history = get_or_create_history(session_id)
     messages = history + [{"role": "user", "content": user_message}]
     
     full_response = ""
-    for chunk in agent.stream(messages):
-        if chunk.content:
-            print(chunk.content, end='', flush=True)
+    showed_searching = False
+    print("Wolf: ", end="", flush=True)
+    
+    for chunk, metadata in agent.stream({"messages": messages}, stream_mode="messages"):
+        # Show searching indicator when tool is called
+        if hasattr(chunk, "tool_calls") and chunk.tool_calls and not showed_searching:
+            print("📚 Researching...\nWolf: ", end="", flush=True)
+            showed_searching = True
+            continue
+        
+        # Skip tool responses
+        if hasattr(chunk, "type") and chunk.type == "tool":
+            continue
+        if hasattr(chunk, "name") and chunk.name:
+            continue
+        
+        # Print actual content
+        if hasattr(chunk, "content") and chunk.content:
+            print(chunk.content, end="", flush=True)
             full_response += chunk.content
             time.sleep(0.07)
     
-    print()  # New line after finishing response
+    print()
     
-    # Save to history
     history.append({"role": "user", "content": user_message})
     history.append({"role": "assistant", "content": full_response})
     
     return full_response
+
