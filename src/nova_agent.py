@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
-from langchain_community.tools.tavily_search import TavilySearchResults
+from langchain_tavily import TavilySearch
 from langchain.agents import create_agent  
 
 load_dotenv()
@@ -13,7 +13,7 @@ llm = ChatOpenAI(
 )
 
 # Configure the Tavily search tool for up-to-date information retrieval
-search_tool = TavilySearchResults(
+search_tool = TavilySearch(
     max_results=3,
     description=(
         "Search the web for current events, recent news, or any information "
@@ -82,7 +82,7 @@ def chat_with_nova(user_message: str, session_id: str = "default") -> str:
     return reply
 
 def chat_with_nova_stream(user_message: str, session_id: str = "default"):
-    
+
     #Stream Nova's response token by token.
     history = get_or_create_history(session_id)
     messages = history + [{"role": "user", "content": user_message}]
