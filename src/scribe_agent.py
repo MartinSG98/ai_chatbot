@@ -100,9 +100,35 @@ def list_documents(user_id: str) -> str:
     except Exception as e:
         return f"Couldn't list documents: {e}"
 
+@tool
+def delete_document(user_id: str, filename: str) -> str:
+    """
+    Delete a document from the user's folder.
+    
+    Use this when someone asks to:
+    - Delete/remove a file
+    - Get rid of a document
+    - Clean up files
+    
+    Args:
+        user_id: The user's unique identifier
+        filename: Name of the file to delete
+    """
+    try:
+        folder = get_user_folder(user_id)
+        filepath = os.path.join(folder, filename)
+        
+        if os.path.exists(filepath):
+            os.remove(filepath)
+            return f"🗑️ Deleted: {filename}"
+        else:
+            return f"File not found: {filename}"
+    except Exception as e:
+        return f"Couldn't delete file: {e}"
 
-# Scribe's toolkit
-tools = [create_document, read_document, list_documents]
+
+# Scribe's toolkit 
+tools = [create_document, read_document, list_documents, delete_document]
 
 system_prompt = """Your name is Scribe.
 
@@ -159,7 +185,7 @@ def chat_with_scribe(user_message: str, session_id: str = "default", user_id: st
     return reply
 
 def chat_with_scribe_stream(user_message: str, session_id: str = "default", user_id: str = "default"):
-    # Stream Scribe's response with clean output.
+    #Stream Scribe's response with clean output.
     history = get_or_create_history(session_id)
     
     message_with_context = f"[user_id: {user_id}]\n{user_message}"
@@ -171,7 +197,18 @@ def chat_with_scribe_stream(user_message: str, session_id: str = "default", user
     
     for chunk, metadata in agent.stream({"messages": messages}, stream_mode="messages"):
         if hasattr(chunk, "tool_calls") and chunk.tool_calls and not showed_working:
-            print("📝 Writing...\nScribe: ", end="", flush=True)
+            # Get the tool name to show appropriate status
+            tool_name = chunk.tool_calls[0]["name"]
+            
+            status_messages = {
+                "create_document": "📝 Writing...",
+                "read_document": "📖 Reading...",
+                "list_documents": "📁 Listing...",
+                "delete_document": "🗑️ Deleting..."
+            }
+            status = status_messages.get(tool_name, "⏳ Working...")
+            
+            print(f"{status}\nScribe: ", end="", flush=True)
             showed_working = True
             continue
         
