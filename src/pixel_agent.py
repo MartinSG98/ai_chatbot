@@ -6,7 +6,7 @@ from langchain_core.tools import tool
 import urllib.parse
 import base64
 import httpx
-
+from openai import OpenAI
 
 load_dotenv()
 
@@ -42,3 +42,41 @@ def generate_image(prompt: str) -> str:
         return f"🎨 Image generated!\n\nPrompt: {prompt}\n\nView your image: {image_url}"
     except Exception as e:
         return f"Couldn't generate image: {e}"
+    
+
+@tool
+def analyze_image(image_url: str) -> str:
+    """
+    Analyze and describe an image from a URL.
+    
+    Use this when someone:
+    - Shares an image URL and asks what's in it
+    - Wants to understand or describe an image
+    - Needs details about an image's content
+    
+    Input must be a valid image URL (ending in .jpg, .png, .gif, .webp or from image hosting sites).
+    """
+    try:
+        # Use GPT-4 Vision to analyze the image
+        client = OpenAI()
+        response = client.chat.completions.create(
+            model="gpt-4.1-mini",
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": "Describe this image in detail. What do you see?"},
+                        {"type": "image_url", "image_url": {"url": image_url}}
+                    ]
+                }
+            ],
+            max_tokens=500
+        )
+        
+        return response.choices[0].message.content
+    except Exception as e:
+        return f"Couldn't analyze image: {e}"
+
+
+# Pixel's toolkit
+tools = [generate_image, analyze_image]
