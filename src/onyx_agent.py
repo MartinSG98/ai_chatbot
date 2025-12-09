@@ -47,3 +47,28 @@ def create_code_file(user_id: str, filename: str, code: str) -> str:
     except Exception as e:
         return f"Couldn't create file: {e}"
     
+@tool
+def read_code_file(user_id: str, filename: str) -> str:
+    """
+    Read and return the contents of a code file.
+    
+    Use this when someone asks to:
+    - Show their code
+    - Review a file
+    - Debug existing code
+    
+    Args:
+        user_id: The user's unique identifier
+        filename: Name of the file to read
+    """
+    try:
+        folder = get_user_folder(user_id)
+        filepath = os.path.join(folder, filename)
+        
+        with open(filepath, "r", encoding="utf-8") as f:
+            code = f.read()
+        return f"📄 {filename}:\n\n```\n{code}\n```"
+    except FileNotFoundError:
+        return f"File not found: {filename}"
+    except Exception as e:
+        return f"Couldn't read file: {e}"
