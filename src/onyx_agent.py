@@ -5,6 +5,7 @@ from langchain_openai import ChatOpenAI
 from langchain_core.tools import tool
 import subprocess
 import sys
+from langchain.agents import create_agent
 
 load_dotenv()
 
@@ -151,3 +152,9 @@ GUIDELINES:
 - Explain your code briefly after writing it
 - If you spot bugs or issues, point them out, but do not fix them until user approves
 """
+
+agent = create_agent(
+    model=llm,
+    tools=tools,
+    system_prompt=system_prompt
+)
