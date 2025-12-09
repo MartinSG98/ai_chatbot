@@ -61,11 +61,8 @@ def get_or_create_history(session_id: str) -> list:
         chat_histories[session_id] = []
     return chat_histories[session_id]
 
-
+#Send a message to Nova and get a response.
 def chat_with_nova(user_message: str, session_id: str = "default") -> str:
-    """
-    Send a message to Nova and get a response.
-    """
     # Get this session's history
     history = get_or_create_history(session_id)
     
@@ -83,6 +80,35 @@ def chat_with_nova(user_message: str, session_id: str = "default") -> str:
     history.append({"role": "assistant", "content": reply})
     
     return reply
+
+def chat_with_nova_stream(user_message: str, session_id: str = "default"):
+    
+    #Stream Nova's response token by token.
+    history = get_or_create_history(session_id)
+    messages = history + [{"role": "user", "content": user_message}]
+    
+    full_response = ""
+    print("Nova: ", end="", flush=True)
+    
+    # Stream the response
+    for chunk in agent.stream({"messages": messages}):
+        if "messages" in chunk:
+            last_msg = chunk["messages"][-1]
+            if hasattr(last_msg, "content") and last_msg.content:
+                # Only print new content
+                new_content = last_msg.content
+                if new_content != full_response:
+                    # Print just the new part
+                    print(new_content[len(full_response):], end="", flush=True)
+                    full_response = new_content
+    
+    print()  # New line after completion
+    
+    # Save to history
+    history.append({"role": "user", "content": user_message})
+    history.append({"role": "assistant", "content": full_response})
+    
+    return full_response
 
 
 # MAIN LOOP (for testing in terminal)
@@ -116,7 +142,7 @@ if __name__ == "__main__":
         
         # Get response from Nova
         try:
-            response = chat_with_nova(user_input, session_id)
-            print(f"Nova: {response}\n")
+            response = chat_with_nova_stream(user_input, session_id)
+            print()  # extra line for spacing
         except Exception as e:
             print(f"Nova: Something broke... {e}\n")
