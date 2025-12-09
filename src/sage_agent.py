@@ -79,7 +79,7 @@ def get_or_create_history(session_id: str) -> list:
 
 #Chat functions
 def chat_with_sage(user_message: str, session_id: str = "default") -> str:
-    
+
     #Send a message to Sage and get a response.
     history = get_or_create_history(session_id)
     messages = history + [{"role": "user", "content": user_message}]
@@ -129,3 +129,38 @@ def chat_with_sage_stream(user_message: str, session_id: str = "default"):
     history.append({"role": "assistant", "content": full_response})
     
     return full_response
+
+if __name__ == "__main__":
+    print("=" * 50)
+    print("Sage is online 🧮")
+    print("(your math & calculations specialist)")
+    print("Type 'exit' to quit, 'clear' to reset memory")
+    print("=" * 50)
+    print()
+    
+    session_id = "default"
+    
+    while True:
+        user_input = input("You: ").strip()
+        
+        # Exit commands
+        if user_input.lower() in ["exit", "quit", "bye"]:
+            print("Sage: Calculate you later! ✌️")
+            break
+        
+        # Clear memory
+        if user_input.lower() == "clear":
+            chat_histories[session_id] = []
+            print("Sage: Memory cleared! Fresh start 🔢")
+            continue
+        
+        # Skip empty input
+        if not user_input:
+            continue
+        
+        # Get response from Sage
+        try:
+            response = chat_with_sage_stream(user_input, session_id)
+            print()
+        except Exception as e:
+            print(f"Sage: Something went wrong... {e}\n")
