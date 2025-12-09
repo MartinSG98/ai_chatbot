@@ -88,7 +88,7 @@ def chat_with_wolf(user_message: str, session_id: str = "default") -> str:
     return reply
 
 def chat_with_wolf_stream(user_message: str, session_id: str = "default"):
-    
+
     #Stream Wolf's response with clean output.
     history = get_or_create_history(session_id)
     messages = history + [{"role": "user", "content": user_message}]
@@ -123,3 +123,39 @@ def chat_with_wolf_stream(user_message: str, session_id: str = "default"):
     
     return full_response
 
+# MAIN LOOP (for testing)
+
+if __name__ == "__main__":
+    print("=" * 50)
+    print("Wolf is online 📚")
+    print("(your knowledge & research specialist)")
+    print("Type 'exit' to quit, 'clear' to reset memory")
+    print("=" * 50)
+    print()
+    
+    session_id = "default"
+    
+    while True:
+        user_input = input("You: ").strip()
+        
+        # Exit commands
+        if user_input.lower() in ["exit", "quit", "bye"]:
+            print("Wolf: Until next time! 🐺")
+            break
+        
+        # Clear memory
+        if user_input.lower() == "clear":
+            chat_histories[session_id] = []
+            print("Wolf: Memory cleared! Fresh start 📖")
+            continue
+        
+        # Skip empty input
+        if not user_input:
+            continue
+        
+        # Get response from Wolf
+        try:
+            response = chat_with_wolf_stream(user_input, session_id)
+            print()
+        except Exception as e:
+            print(f"Wolf: Something went wrong... {e}\n")
