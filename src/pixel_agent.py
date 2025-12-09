@@ -7,6 +7,8 @@ import urllib.parse
 import base64
 import httpx
 from openai import OpenAI
+from langchain.agents import create_agent
+
 
 load_dotenv()
 
@@ -101,3 +103,9 @@ GUIDELINES:
 - If someone shares a URL, ask if they want you to analyze it
 - Be enthusiastic about creative projects!
 """
+
+agent = create_agent(
+    model=llm,
+    tools=tools,
+    system_prompt=system_prompt
+)
