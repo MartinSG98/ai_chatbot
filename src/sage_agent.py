@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 from langchain_core.tools import tool  
 import numexpr
-
+from langchain.agents import create_agent
 
 load_dotenv()
 
@@ -61,3 +61,9 @@ GUIDELINES:
 - If using the calculator, show the expression you calculated
 - Be patient and clear when explaining math concepts
 """
+
+agent = create_agent(
+    model=llm,
+    tools=tools,
+    system_prompt=system_prompt
+)
