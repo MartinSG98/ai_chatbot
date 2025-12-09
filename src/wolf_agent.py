@@ -4,6 +4,8 @@ from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 from langchain_community.tools import WikipediaQueryRun
 from langchain_community.utilities import WikipediaAPIWrapper
+from langchain.agents import create_agent
+
 
 load_dotenv()
 
@@ -51,3 +53,10 @@ GUIDELINES:
 - If Wikipedia doesn't have enough info, say so honestly or request more context
 - Cite that your info comes from Wikipedia when relevant
 """
+
+# Create Wolf
+agent = create_agent(
+    model=llm,
+    tools=tools,
+    system_prompt=system_prompt
+)
