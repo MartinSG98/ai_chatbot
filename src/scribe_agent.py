@@ -191,3 +191,35 @@ def chat_with_scribe_stream(user_message: str, session_id: str = "default", user
     history.append({"role": "assistant", "content": full_response})
     
     return full_response
+
+if __name__ == "__main__":
+    print("=" * 50)
+    print("Scribe is online 📝")
+    print("(your document & writing specialist)")
+    print("Type 'exit' to quit, 'clear' to reset memory")
+    print("=" * 50)
+    print()
+    
+    session_id = "default"
+    user_id = "test_user"  # In the real app, this will come from auth
+    
+    while True:
+        user_input = input("You: ").strip()
+        
+        if user_input.lower() in ["exit", "quit", "bye"]:
+            print("Scribe: Until next time! ✍️")
+            break
+        
+        if user_input.lower() == "clear":
+            chat_histories[session_id] = []
+            print("Scribe: Memory cleared! Fresh page 📄")
+            continue
+        
+        if not user_input:
+            continue
+        
+        try:
+            response = chat_with_scribe_stream(user_input, session_id, user_id)
+            print()
+        except Exception as e:
+            print(f"Scribe: Something went wrong... {e}\n")
