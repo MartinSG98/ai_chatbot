@@ -114,8 +114,53 @@ agent = create_agent(
 chat_histories = {}
 
 def get_or_create_history(session_id: str) -> list:
-    #Gets or creates message history for a session.
+    # Gets or creates message history for a session.
     if session_id not in chat_histories:
         chat_histories[session_id] = []
     return chat_histories[session_id]
 
+def chat_with_pixel(user_message: str, session_id: str = "default") -> str:
+    # Send a message to Pixel and get a response.
+    history = get_or_create_history(session_id)
+    messages = history + [{"role": "user", "content": user_message}]
+    
+    response = agent.invoke({"messages": messages})
+    reply = response["messages"][-1].content
+    
+    history.append({"role": "user", "content": user_message})
+    history.append({"role": "assistant", "content": reply})
+    
+    return reply
+
+
+def chat_with_pixel_stream(user_message: str, session_id: str = "default"):
+    # Stream Pixel's response with clean output.
+    history = get_or_create_history(session_id)
+    messages = history + [{"role": "user", "content": user_message}]
+    
+    full_response = ""
+    showed_working = False
+    print("Pixel: ", end="", flush=True)
+    
+    for chunk, metadata in agent.stream({"messages": messages}, stream_mode="messages"):
+        if hasattr(chunk, "tool_calls") and chunk.tool_calls and not showed_working:
+            print("🎨 Creating magic...\nPixel: ", end="", flush=True)
+            showed_working = True
+            continue
+        
+        if hasattr(chunk, "type") and chunk.type == "tool":
+            continue
+        if hasattr(chunk, "name") and chunk.name:
+            continue
+        
+        if hasattr(chunk, "content") and chunk.content:
+            print(chunk.content, end="", flush=True)
+            full_response += chunk.content
+            time.sleep(0.07)
+    
+    print()
+    
+    history.append({"role": "user", "content": user_message})
+    history.append({"role": "assistant", "content": full_response})
+    
+    return full_response
