@@ -9,7 +9,8 @@ load_dotenv()
 # Initialize the ChatOpenAI client with the specified model and parameters
 llm = ChatOpenAI(
     model="gpt-4.1-mini",
-    temperature=0.7
+    temperature=0.7,
+    streaming=True
 )
 
 # Configure the Tavily search tool for up-to-date information retrieval
@@ -82,7 +83,7 @@ def chat_with_nova(user_message: str, session_id: str = "default") -> str:
     return reply
 
 def chat_with_nova_stream(user_message: str, session_id: str = "default"):
-
+   
     #Stream Nova's response token by token.
     history = get_or_create_history(session_id)
     messages = history + [{"role": "user", "content": user_message}]
@@ -90,19 +91,14 @@ def chat_with_nova_stream(user_message: str, session_id: str = "default"):
     full_response = ""
     print("Nova: ", end="", flush=True)
     
-    # Stream the response
-    for chunk in agent.stream({"messages": messages}):
-        if "messages" in chunk:
-            last_msg = chunk["messages"][-1]
-            if hasattr(last_msg, "content") and last_msg.content:
-                # Only print new content
-                new_content = last_msg.content
-                if new_content != full_response:
-                    # Print just the new part
-                    print(new_content[len(full_response):], end="", flush=True)
-                    full_response = new_content
+    # stream_mode="messages" gives us token-level streaming
+    for chunk, metadata in agent.stream({"messages": messages}, stream_mode="messages"):
+        # chunk is an AIMessageChunk with partial content
+        if hasattr(chunk, "content") and chunk.content:
+            print(chunk.content, end="", flush=True)
+            full_response += chunk.content
     
-    print()  # New line after completion
+    print()  # New line after streaming is done
     
     # Save to history
     history.append({"role": "user", "content": user_message})
