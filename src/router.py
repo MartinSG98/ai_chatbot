@@ -10,5 +10,14 @@ import os
 import time
 from dotenv import load_dotenv
 from typing import TypedDict, Literal
+from langgraph.graph import StateGraph, START, END
 
 load_dotenv()
+
+class RouterState(TypedDict):
+    #Data that flows through our agent graph.
+    user_message: str                # what the user said
+    session_id: str                  # conversation session
+    user_id: str                     # for file-based agents
+    agent_name: str                  # which agent was chosen
+    response: str                    # final response to user
