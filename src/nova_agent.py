@@ -3,6 +3,8 @@ from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain.agents import AgentExecutor, create_openai_tools_agent
+
 
 
 load_dotenv()
@@ -52,3 +54,20 @@ prompt = ChatPromptTemplate.from_messages([
     ("human", "{input}"),                              # user's current message
     MessagesPlaceholder(variable_name="agent_scratchpad")  # agent's internal thinking
 ])
+
+# Create the agent - this connects the LLM with the tools and prompt. The agent can "decide" when to use tools based on the user's question
+agent = create_openai_tools_agent(
+    llm=llm,        
+    tools=tools,    
+    prompt=prompt   
+)
+
+# AgentExecutor actually runs the agent and handles the tool-calling loop
+agent_executor = AgentExecutor(
+    agent=agent,
+    tools=tools,
+    verbose=True,           # shows agent's thinking (useful for debugging)
+    handle_parsing_errors=True,  # won't crash on weird outputs
+    max_iterations=5        # safety limit so it doesn't loop forever
+)
+# Example flow: user asks about news → agent decides to search → gets results → responds
