@@ -76,3 +76,56 @@ def get_or_create_history(session_id: str) -> list:
     if session_id not in chat_histories:
         chat_histories[session_id] = []
     return chat_histories[session_id]
+
+#Chat functions
+def chat_with_sage(user_message: str, session_id: str = "default") -> str:
+    
+    #Send a message to Sage and get a response.
+    history = get_or_create_history(session_id)
+    messages = history + [{"role": "user", "content": user_message}]
+    
+    # Invoke the agent
+    response = agent.invoke({"messages": messages})
+    reply = response["messages"][-1].content
+    
+    # Save to history
+    history.append({"role": "user", "content": user_message})
+    history.append({"role": "assistant", "content": reply})
+    
+    return reply
+
+def chat_with_sage_stream(user_message: str, session_id: str = "default"):
+
+    #Stream Sage's response with clean output.
+    history = get_or_create_history(session_id)
+    messages = history + [{"role": "user", "content": user_message}]
+    
+    full_response = ""
+    showed_searching = False
+    print("Sage: ", end="", flush=True)
+    
+    for chunk, metadata in agent.stream({"messages": messages}, stream_mode="messages"):
+        # Show searching indicator when tool is called
+        if hasattr(chunk, "tool_calls") and chunk.tool_calls and not showed_searching:
+            print("📚 Calculating...\nSage: ", end="", flush=True)
+            showed_searching = True
+            continue
+        
+        # Skip tool responses
+        if hasattr(chunk, "type") and chunk.type == "tool":
+            continue
+        if hasattr(chunk, "name") and chunk.name:
+            continue
+        
+        # Print actual content
+        if hasattr(chunk, "content") and chunk.content:
+            print(chunk.content, end="", flush=True)
+            full_response += chunk.content
+            time.sleep(0.07)
+    
+    print()
+    
+    history.append({"role": "user", "content": user_message})
+    history.append({"role": "assistant", "content": full_response})
+    
+    return full_response
