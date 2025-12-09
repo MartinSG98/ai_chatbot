@@ -164,3 +164,34 @@ def chat_with_pixel_stream(user_message: str, session_id: str = "default"):
     history.append({"role": "assistant", "content": full_response})
     
     return full_response
+
+if __name__ == "__main__":
+    print("=" * 50)
+    print("Pixel is online 🎨")
+    print("(your image generation & analysis specialist)")
+    print("Type 'exit' to quit, 'clear' to reset memory")
+    print("=" * 50)
+    print()
+    
+    session_id = "default"
+    
+    while True:
+        user_input = input("You: ").strip()
+        
+        if user_input.lower() in ["exit", "quit", "bye"]:
+            print("Pixel: Stay creative! ✨")
+            break
+        
+        if user_input.lower() == "clear":
+            chat_histories[session_id] = []
+            print("Pixel: Canvas cleared! Fresh start 🖼️")
+            continue
+        
+        if not user_input:
+            continue
+        
+        try:
+            response = chat_with_pixel_stream(user_input, session_id)
+            print()
+        except Exception as e:
+            print(f"Pixel: Something went wrong... {e}\n")
