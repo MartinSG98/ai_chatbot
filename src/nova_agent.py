@@ -4,7 +4,8 @@ from langchain_openai import ChatOpenAI
 from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain.agents import AgentExecutor, create_openai_tools_agent
-
+from langchain_community.chat_message_histories import ChatMessageHistory
+from langchain_core.runnables.history import RunnableWithMessageHistory
 
 
 load_dotenv()
@@ -71,3 +72,20 @@ agent_executor = AgentExecutor(
     max_iterations=5        # safety limit so it doesn't loop forever
 )
 # Example flow: user asks about news → agent decides to search → gets results → responds
+
+chat_histories = {}
+
+def get_session_history(session_id: str):
+    #Gets or creates a chat history for a session.Each user/conversation can have their own session_id.
+    if session_id not in chat_histories:
+        chat_histories[session_id] = ChatMessageHistory()
+    return chat_histories[session_id]
+
+# Wrap the agent with memory capabilities
+agent_with_memory = RunnableWithMessageHistory(
+    agent_executor,
+    get_session_history,
+    input_messages_key="input",          # where user message goes
+    history_messages_key="chat_history"  # where past messages get injected
+)
+# This automatically loads past messages and saves new ones after each chat
