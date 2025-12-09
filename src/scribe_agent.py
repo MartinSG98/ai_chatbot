@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 from langchain_core.tools import tool
 from datetime import datetime
+from langchain.agents import create_agent
 
 load_dotenv()
 
@@ -124,3 +125,9 @@ GUIDELINES:
 - Confirm what you created and offer to make changes
 - For longer documents, outline the structure first before writing and ask for user confirmation
 """
+
+agent = create_agent(
+    model=llm,
+    tools=tools,
+    system_prompt=system_prompt
+)
