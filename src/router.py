@@ -23,12 +23,12 @@ from onyx_agent import chat_with_onyx_stream
 load_dotenv()
 
 class RouterState(TypedDict):
-    # Data that flows through our agent graph.
-    user_message: str                # what the user said
-    session_id: str                  # conversation session
-    user_id: str                     # for file-based agents
-    agent_name: str                  # which agent was chosen
-    response: str                    # final response to user
+    user_message: str
+    session_id: str
+    user_id: str
+    agent_name: str
+    response: str
+    last_agent_used: str
 
 
 # Broodmother's brain (low temp = consistent decisions)
@@ -37,12 +37,30 @@ broodmother_llm = ChatOpenAI(
     temperature=0
 )
 
-def broodmother_classify(state: RouterState) -> RouterState:
+def broodmother_classify(state: RouterState) -> dict:
     """
     The Broodmother analyzes the message and assigns it to the right agent.
+    Returns only the fields being updated.
     """
-    user_message = state["user_message"]
+    user_message = state["user_message"].lower()
+    last_agent_used = state.get("last_agent_used", "") or ""
     
+    # If it looks like a follow-up, use last agent
+    follow_up_phrases = [
+        "delete it", "remove it", "delete that", "remove that",
+        "show it", "show me", "edit it", "change it", "update it",
+        "can you delete", "can you remove", "now delete", "now remove",
+        "thanks", "thank you", "ok now", "okay now", "great now",
+        "the file", "that file", "this file"
+    ]
+    
+    if last_agent_used and any(phrase in user_message for phrase in follow_up_phrases):
+        return {
+            "agent_name": last_agent_used,
+            "last_agent_used": last_agent_used
+        }
+    
+    # Otherwise, ask the LLM to classify
     classification_prompt = f"""Analyze this message and decide which agent should handle it.
 
 AGENTS:
@@ -53,53 +71,50 @@ AGENTS:
 - scribe: Documents, notes, writing files, creating text files, summaries
 - onyx: Code, programming, scripts, debugging, any coding language
 
-USER MESSAGE: {user_message}
+USER MESSAGE: {state["user_message"]}
 
 Respond with ONLY the agent name (nova/wolf/sage/pixel/scribe/onyx), nothing else."""
 
     response = broodmother_llm.invoke(classification_prompt)
     agent_name = response.content.strip().lower()
     
-    # Validate - default to nova if unclear
     valid_agents = ["nova", "wolf", "sage", "pixel", "scribe", "onyx"]
     if agent_name not in valid_agents:
         agent_name = "nova"
     
-    state["agent_name"] = agent_name
-    return state
+    return {
+        "agent_name": agent_name,
+        "last_agent_used": agent_name
+    }
 
-# Define each agent node in the graph
-def nova_node(state: RouterState) -> RouterState:
+
+# Define each agent node in the graph - return only updated fields
+def nova_node(state: RouterState) -> dict:
     response = chat_with_nova_stream(state["user_message"], state["session_id"])
-    state["response"] = response
-    return state
+    return {"response": response}
 
-def wolf_node(state: RouterState) -> RouterState:
+def wolf_node(state: RouterState) -> dict:
     response = chat_with_wolf_stream(state["user_message"], state["session_id"])
-    state["response"] = response
-    return state
+    return {"response": response}
 
-def sage_node(state: RouterState) -> RouterState:
+def sage_node(state: RouterState) -> dict:
     response = chat_with_sage_stream(state["user_message"], state["session_id"])
-    state["response"] = response
-    return state
+    return {"response": response}
 
-def pixel_node(state: RouterState) -> RouterState:
+def pixel_node(state: RouterState) -> dict:
     response = chat_with_pixel_stream(state["user_message"], state["session_id"])
-    state["response"] = response
-    return state
+    return {"response": response}
 
-def scribe_node(state: RouterState) -> RouterState:
+def scribe_node(state: RouterState) -> dict:
     response = chat_with_scribe_stream(state["user_message"], state["session_id"], state["user_id"])
-    state["response"] = response
-    return state
+    return {"response": response}
 
-def onyx_node(state: RouterState) -> RouterState:
+def onyx_node(state: RouterState) -> dict:
     response = chat_with_onyx_stream(state["user_message"], state["session_id"], state["user_id"])
-    state["response"] = response
-    return state
+    return {"response": response}
 
-# Return the name of the agent node to route to.
+
+# Return the name of the agent node to route to
 def route_to_agent(state: RouterState) -> str:
     return state["agent_name"]
 
@@ -144,18 +159,30 @@ graph.add_edge("onyx", END)
 # Compile the graph
 colony = graph.compile()
 
+# Track last agent across calls
+last_agent_tracker = {}
+
 def chat(user_message: str, session_id: str = "default", user_id: str = "default") -> str:
     """
     Send a message to the Broodmother and get a response from the right agent.
     """
+    # Get last agent for this session
+    last_agent = last_agent_tracker.get(session_id, "")
+    
     result = colony.invoke({
         "user_message": user_message,
         "session_id": session_id,
         "user_id": user_id,
         "agent_name": "",
-        "response": ""
+        "response": "",
+        "last_agent_used": last_agent
     })
+    
+    # Save the agent that was used for next time
+    last_agent_tracker[session_id] = result["last_agent_used"]
+    
     return result["response"]
+
 
 if __name__ == "__main__":
     print("=" * 50)
