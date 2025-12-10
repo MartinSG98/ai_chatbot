@@ -12,12 +12,18 @@ from dotenv import load_dotenv
 from typing import TypedDict, Literal
 from langgraph.graph import StateGraph, START, END
 from langchain_openai import ChatOpenAI
+from nova_agent import chat_with_nova_stream
+from wolf_agent import chat_with_wolf_stream
+from sage_agent import chat_with_sage_stream
+from pixel_agent import chat_with_pixel_stream
+from scribe_agent import chat_with_scribe_stream
+from onyx_agent import chat_with_onyx_stream
 
 
 load_dotenv()
 
 class RouterState(TypedDict):
-    #Data that flows through our agent graph.
+    # Data that flows through our agent graph.
     user_message: str                # what the user said
     session_id: str                  # conversation session
     user_id: str                     # for file-based agents
@@ -60,4 +66,35 @@ Respond with ONLY the agent name (nova/wolf/sage/pixel/scribe/onyx), nothing els
         agent_name = "nova"
     
     state["agent_name"] = agent_name
+    return state
+
+# Define each agent node in the graph
+def nova_node(state: RouterState) -> RouterState:
+    response = chat_with_nova_stream(state["user_message"], state["session_id"])
+    state["response"] = response
+    return state
+
+def wolf_node(state: RouterState) -> RouterState:
+    response = chat_with_wolf_stream(state["user_message"], state["session_id"])
+    state["response"] = response
+    return state
+
+def sage_node(state: RouterState) -> RouterState:
+    response = chat_with_sage_stream(state["user_message"], state["session_id"])
+    state["response"] = response
+    return state
+
+def pixel_node(state: RouterState) -> RouterState:
+    response = chat_with_pixel_stream(state["user_message"], state["session_id"])
+    state["response"] = response
+    return state
+
+def scribe_node(state: RouterState) -> RouterState:
+    response = chat_with_scribe_stream(state["user_message"], state["session_id"], state["user_id"])
+    state["response"] = response
+    return state
+
+def onyx_node(state: RouterState) -> RouterState:
+    response = chat_with_onyx_stream(state["user_message"], state["session_id"], state["user_id"])
+    state["response"] = response
     return state
