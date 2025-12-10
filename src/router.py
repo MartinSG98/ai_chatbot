@@ -32,14 +32,14 @@ class RouterState(TypedDict):
 
 
 # Broodmother's brain (low temp = consistent decisions)
-classifier_llm = ChatOpenAI(
+broodmother_llm = ChatOpenAI(
     model="gpt-4.1-mini",
     temperature=0
 )
 
-def classify_message(state: RouterState) -> RouterState:
+def broodmother_classify(state: RouterState) -> RouterState:
     """
-    You are the Broodmother of our agents colony. You analyze the message from the user and assign it to the right agent.
+    The Broodmother analyzes the message and assigns it to the right agent.
     """
     user_message = state["user_message"]
     
@@ -57,7 +57,7 @@ USER MESSAGE: {user_message}
 
 Respond with ONLY the agent name (nova/wolf/sage/pixel/scribe/onyx), nothing else."""
 
-    response = classifier_llm.invoke(classification_prompt)
+    response = broodmother_llm.invoke(classification_prompt)
     agent_name = response.content.strip().lower()
     
     # Validate - default to nova if unclear
@@ -98,3 +98,48 @@ def onyx_node(state: RouterState) -> RouterState:
     response = chat_with_onyx_stream(state["user_message"], state["session_id"], state["user_id"])
     state["response"] = response
     return state
+
+# Return the name of the agent node to route to.
+def route_to_agent(state: RouterState) -> str:
+    return state["agent_name"]
+
+
+# Create the graph
+graph = StateGraph(RouterState)
+
+# Add nodes
+graph.add_node("broodmother", broodmother_classify)
+graph.add_node("nova", nova_node)
+graph.add_node("wolf", wolf_node)
+graph.add_node("sage", sage_node)
+graph.add_node("pixel", pixel_node)
+graph.add_node("scribe", scribe_node)
+graph.add_node("onyx", onyx_node)
+
+# Connect: START → broodmother
+graph.add_edge(START, "broodmother")
+
+# Conditional routing: broodmother → appropriate agent
+graph.add_conditional_edges(
+    "broodmother",
+    route_to_agent,
+    {
+        "nova": "nova",
+        "wolf": "wolf",
+        "sage": "sage",
+        "pixel": "pixel",
+        "scribe": "scribe",
+        "onyx": "onyx"
+    }
+)
+
+# All agents → END
+graph.add_edge("nova", END)
+graph.add_edge("wolf", END)
+graph.add_edge("sage", END)
+graph.add_edge("pixel", END)
+graph.add_edge("scribe", END)
+graph.add_edge("onyx", END)
+
+# Compile the graph
+colony = graph.compile()
