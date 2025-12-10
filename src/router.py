@@ -143,3 +143,43 @@ graph.add_edge("onyx", END)
 
 # Compile the graph
 colony = graph.compile()
+
+def chat(user_message: str, session_id: str = "default", user_id: str = "default") -> str:
+    """
+    Send a message to the Broodmother and get a response from the right agent.
+    """
+    result = colony.invoke({
+        "user_message": user_message,
+        "session_id": session_id,
+        "user_id": user_id,
+        "agent_name": "",
+        "response": ""
+    })
+    return result["response"]
+
+if __name__ == "__main__":
+    print("=" * 50)
+    print("🕷️ Broodmother is online")
+    print("Routing to: Nova | Wolf | Sage | Pixel | Scribe | Onyx")
+    print("Type 'exit' to quit")
+    print("=" * 50)
+    print()
+    
+    session_id = "default"
+    user_id = "test_user"
+    
+    while True:
+        user_input = input("You: ").strip()
+        
+        if user_input.lower() in ["exit", "quit", "bye"]:
+            print("🕷️ Broodmother: The colony rests... for now.")
+            break
+        
+        if not user_input:
+            continue
+        
+        try:
+            response = chat(user_input, session_id, user_id)
+            print()
+        except Exception as e:
+            print(f"🕷️ Broodmother: Something went wrong... {e}\n")
