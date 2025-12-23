@@ -1,4 +1,5 @@
 openai_key.txt
+aws_user_cred.txt
 .env
 venv/
 __pycache__/
