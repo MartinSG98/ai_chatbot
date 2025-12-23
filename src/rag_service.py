@@ -21,3 +21,27 @@ text_splitter = RecursiveCharacterTextSplitter(
     chunk_size=1000,
     chunk_overlap=200
 )
+
+# Load a document and add it to the vector store. Support pdfc, docx, txt
+def add_document(file_path: str, user_id: str = "default"):
+    if file_path.endswith(".pdf"):
+        loader = PyPDFLoader(file_path)
+    elif file_path.endswith(".docx"):
+        loader = Docx2txtLoader(file_path)
+    elif file_path.endswith(".txt"):
+        loader = TextLoader(file_path)
+    else:
+        raise ValueError(f"Unsupported file type: {file_path}")
+    
+    documents = loader.load()
+    
+    # Add metadata (so we can filter by user later)
+    for doc in documents:
+        doc.metadata["user_id"] = user_id
+        doc.metadata["source"] = file_path
+    
+    chunks = text_splitter.split_documents(documents)
+    
+    vector_store.add_documents(chunks)
+    
+    return len(chunks)
