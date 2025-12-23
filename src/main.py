@@ -37,7 +37,7 @@ class AgentInfo(BaseModel):
     description: str
 
 @app.post("/chat", response_model=ChatResponse)
-def chat_endpoint(request: ChatRequest)
+def chat_endpoint(request: ChatRequest):
 
     session_id = request.session_id or str(uuid4())
     user_id = request.user_id or "anonymous"
