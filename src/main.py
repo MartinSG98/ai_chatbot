@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
 from uuid import uuid4
+from router import chat, last_agent_tracker
 
 app = FastAPI(
     title="Broodmother API",
@@ -34,3 +35,22 @@ class ChatResponse(BaseModel):
 class AgentInfo(BaseModel):
     name: str
     description: str
+
+@app.post("/chat", response_model=ChatResponse)
+def chat_endpoint(request: ChatRequest)
+
+    session_id = request.session_id or str(uuid4())
+    user_id = request.user_id or "anonymous"
+
+    try:
+        response = chat(request.message, session_id, user_id)
+        agent_used = last_agent_tracker.get(session_id, "unknown")
+
+        return ChatResponse(
+            response=response,
+            agent_used=agent_used,
+            session_id=session_id
+        )
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
