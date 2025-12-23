@@ -1,11 +1,11 @@
 #FastAPI setup
-
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
 from uuid import uuid4
 from router import chat, last_agent_tracker
+from database import save_message, get_chat_history, delete_chat_history
 
 app = FastAPI(
     title="Broodmother API",
@@ -43,8 +43,14 @@ def chat_endpoint(request: ChatRequest):
     user_id = request.user_id or "anonymous"
 
     try:
+        # Save user message to db
+        save_message(session_id, "user", request.message)
+        # Send to Broodmother
         response = chat(request.message, session_id, user_id)
+        # Get which agent was used
         agent_used = last_agent_tracker.get(session_id, "unknown")
+        # Save assistant response to db
+        save_message(session_id, "assistant", response, agent_name=agent_used)
 
         return ChatResponse(
             response=response,
@@ -73,3 +79,15 @@ def get_agents():
 def health_check():
 
     return {"status": "healthy", "service": "Broodmother API"}
+
+@app.get("/history/{session_id}")
+def get_history(session_id: str):
+
+    messages = get_chat_history(session_id)
+    return {"session_id": session_id, "messages": messages}
+
+@app.delete("/history/{session_id}")
+def delete_history(session_id: str):
+    
+    deleted_count = delete_chat_history(session_id)
+    return {"session_id": session_id, "deleted": deleted_count}
