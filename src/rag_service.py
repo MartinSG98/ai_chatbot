@@ -12,7 +12,7 @@ os.makedirs(CHROMA_DIR, exist_ok=True)
 
 embeddings = OpenAIEmbeddings()
 
-vector_store = Chrome(
+vector_store = Chroma(
     persist_directory=CHROMA_DIR,
     embedding_function=embeddings
 )

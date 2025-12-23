@@ -96,7 +96,7 @@ def delete_history(session_id: str):
     return {"session_id": session_id, "deleted": deleted_count}
 
 @app.post("/documents/upload")
-async def upload_document(file: UploadFile = File(...), user_id: str = "default")
+async def upload_document(file: UploadFile = File(...), user_id: str = "default"):
     
     allowed_extenstions = [".pdf", ".docx", ".txt"]
     file_ext = os.path.splitext(file.filename)[1].lower()
@@ -139,13 +139,17 @@ def search_docs(query: str, user_id: str = "default", k: int = 3):
         ]
     }
 
-@app.delete("/documents/{user_id}")
-def delete_docs(user_id:str):
+def delete_user_documents(user_id: str):
 
-    deleted_count = delete_user_documents(user_id)
+    # Access the underlying ChromaDB collection
+    results = vector_store._collection.get(
+        where={"user_id": user_id}
+    )
+    
+    if results["ids"]:
+        vector_store._collection.delete(ids=results["ids"])
+        return len(results["ids"])
+    
+    return 0
 
-    return{
-        "user_id": user_id,
-        "deleted_chunks": deleted_count
-    }
 

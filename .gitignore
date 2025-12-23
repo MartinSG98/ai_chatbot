@@ -4,3 +4,5 @@ aws_user_cred.txt
 venv/
 __pycache__/
 output/
+src/chroma_db
+src/documents
