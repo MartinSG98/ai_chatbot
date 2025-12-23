@@ -1,11 +1,14 @@
 #FastAPI setup
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
 from uuid import uuid4
 from router import chat, last_agent_tracker
 from database import save_message, get_chat_history, delete_chat_history
+from rag_service import add_document, search_documents, delete_user_documents, DOCUMENTS_DIR
+import shutil
+import os
 
 app = FastAPI(
     title="Broodmother API",
@@ -88,6 +91,35 @@ def get_history(session_id: str):
 
 @app.delete("/history/{session_id}")
 def delete_history(session_id: str):
-    
+
     deleted_count = delete_chat_history(session_id)
     return {"session_id": session_id, "deleted": deleted_count}
+
+@app.post("/documents/upload")
+async def upload_document(file: UploadFile = File(...), user_id: str = "default")
+    
+    allowed_extenstions = [".pdf", ".docx", ".txt"]
+    file_ext = os.path.splitext(file.filename)[1].lower()
+
+    if file_ext not in allowed_extenstions:
+        raise HTTPException(
+            status_code=400,
+            detail=f"File type not support. Allowed: {allowed_extenstions}"
+        )
+
+    file_path = os.path.join(DOCUMENTS_DIR, f"{user_id}_{file.filename}")
+
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    try:
+        chunks_added = add_document(file_path, user_id)
+        return {
+            "filename": file.filename,
+            "user_id": user_id,
+            "chunks_added": chunks_added,
+            "message": "Document uploaded and indexed successfully"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
