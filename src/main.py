@@ -51,6 +51,25 @@ def chat_endpoint(request: ChatRequest)
             agent_used=agent_used,
             session_id=session_id
         )
-        
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/agents", response_model=list[AgentInfo])
+def get_agents():
+
+    agents = [
+        AgentInfo(name="Nova", description="Web search and current events"),
+        AgentInfo(name="Wolf", description="Wikipedia and knowledge research"),
+        AgentInfo(name="Sage", description="Math and calculations"),
+        AgentInfo(name="Pixel", description="Image generation and analysis"),
+        AgentInfo(name="Scribe", description="Document creation and management"),
+        AgentInfo(name="Onyx", description="Code generation and programming"),
+    ]
+
+    return agents
+
+@app.get("/health")
+def health_check():
+
+    return {"status": "healthy", "service": "Broodmother API"}
