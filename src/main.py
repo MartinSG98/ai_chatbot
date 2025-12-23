@@ -138,3 +138,14 @@ def search_docs(query: str, user_id: str = "default", k: int = 3):
             for doc in results
         ]
     }
+
+@app.delete("/documents/{user_id}")
+def delete_docs(user_id:str):
+
+    deleted_count = delete_user_documents(user_id)
+
+    return{
+        "user_id": user_id,
+        "deleted_chunks": deleted_count
+    }
+
