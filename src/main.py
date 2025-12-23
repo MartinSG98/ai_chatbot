@@ -85,3 +85,9 @@ def get_history(session_id: str):
 
     messages = get_chat_history(session_id)
     return {"session_id": session_id, "messages": messages}
+
+@app.delete("/history/{session_id}")
+def delete_history(session_id: str):
+    
+    deleted_count = delete_chat_history(session_id)
+    return {"session_id": session_id, "deleted": deleted_count}
