@@ -79,3 +79,9 @@ def get_agents():
 def health_check():
 
     return {"status": "healthy", "service": "Broodmother API"}
+
+@app.get("/history/{session_id}")
+def get_history(session_id: str):
+
+    messages = get_chat_history(session_id)
+    return {"session_id": session_id, "messages": messages}
