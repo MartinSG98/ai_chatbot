@@ -45,3 +45,31 @@ def add_document(file_path: str, user_id: str = "default"):
     vector_store.add_documents(chunks)
     
     return len(chunks)
+
+def search_documents(query: str, user_id: str = "default", k: int = 3):
+    """
+    Search documents for relevant content.
+    query: what to search for
+    user_id: only search this user's documents
+    k: number of results to return
+    """
+    results = vector_store.similarity_search(
+        query,
+        k=k,
+        filter={"user_id": user_id}
+    )
+    
+    return results
+
+# Delete all documents for a user
+def delete_user_documents(user_id: str):
+
+    results = vector_store.get(
+        where={"user_id": user_id}
+    )
+    
+    if results["ids"]:
+        vector_store.delete(ids=results["ids"])
+        return len(results["ids"])
+    
+    return 0
