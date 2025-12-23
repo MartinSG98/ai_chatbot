@@ -123,3 +123,18 @@ async def upload_document(file: UploadFile = File(...), user_id: str = "default"
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/documents/search")
+def search_docs(query: str, user_id: str = "default", k: int = 3):
+
+    results = search_documents(query, user_id, k)
+    
+    return {
+        "query": query,
+        "results": [
+            {
+                "content": doc.page_content,
+                "source": doc.metadata.get("source", "unknown")
+            }
+            for doc in results
+        ]
+    }
