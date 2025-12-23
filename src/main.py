@@ -10,3 +10,12 @@ app - FastAPI(
     description="Multi-agent AI system powered by LangGraph"
     version="1.0.0"
 )
+
+#Middleware to allow connection to frontend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],#to be updated
+    allow_credentials=True,
+    allow_method=["*"],
+    allow_headers=["*"]
+)
