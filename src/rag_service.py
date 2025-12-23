@@ -9,3 +9,15 @@ CHROMA_DIR = "chroma_db"
 
 os.makedirs(DOCUMENTS_DIR, exist_ok=True)
 os.makedirs(CHROMA_DIR, exist_ok=True)
+
+embeddings = OpenAIEmbeddings()
+
+vector_store = Chrome(
+    persist_directory=CHROMA_DIR,
+    embedding_function=embeddings
+)
+
+text_splitter = RecursiveCharacterTextSplitter(
+    chunk_size=1000,
+    chunk_overlap=200
+)
