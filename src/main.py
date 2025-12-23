@@ -138,7 +138,8 @@ def search_docs(query: str, user_id: str = "default", k: int = 3):
             for doc in results
         ]
     }
-
+    
+@app.delete("/documents/{user_id}")
 def delete_user_documents(user_id: str):
 
     # Access the underlying ChromaDB collection
