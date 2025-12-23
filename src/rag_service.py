@@ -64,12 +64,12 @@ def search_documents(query: str, user_id: str = "default", k: int = 3):
 # Delete all documents for a user
 def delete_user_documents(user_id: str):
 
-    results = vector_store.get(
+    results = vector_store._collection.get(
         where={"user_id": user_id}
     )
     
     if results["ids"]:
-        vector_store.delete(ids=results["ids"])
+        vector_store._collection.delete(ids=results["ids"])
         return len(results["ids"])
     
     return 0

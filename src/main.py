@@ -138,19 +138,15 @@ def search_docs(query: str, user_id: str = "default", k: int = 3):
             for doc in results
         ]
     }
-    
-@app.delete("/documents/{user_id}")
-def delete_user_documents(user_id: str):
 
-    # Access the underlying ChromaDB collection
-    results = vector_store._collection.get(
-        where={"user_id": user_id}
-    )
-    
-    if results["ids"]:
-        vector_store._collection.delete(ids=results["ids"])
-        return len(results["ids"])
-    
-    return 0
+@app.delete("/documents/{user_id}")
+def delete_docs(user_id:str):
+
+    deleted_count = delete_user_documents(user_id)
+
+    return{
+        "user_id": user_id,
+        "deleted_chunks": deleted_count
+    }
 
 
