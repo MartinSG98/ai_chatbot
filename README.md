@@ -2,14 +2,27 @@
 
 A multi-agent AI system powered by LangGraph, LangChain, and OpenAI. The system intelligently routes user queries to specialized AI agents, each with distinct capabilities and personalities.
 
+## Live API
+
+**Production URL:** `https://93vv9ogfgh.execute-api.eu-west-2.amazonaws.com`
+
+- Docs: `https://93vv9ogfgh.execute-api.eu-west-2.amazonaws.com/docs`
+- Health: `https://93vv9ogfgh.execute-api.eu-west-2.amazonaws.com/health`
+
 ## Architecture
 ```
                          User Request
                               │
                               ▼
                       ┌───────────────┐
-                      │   FastAPI     │
-                      │   Backend     │
+                      │  API Gateway  │  ← HTTPS endpoint
+                      │    (AWS)      │
+                      └───────┬───────┘
+                              │
+                              ▼
+                      ┌───────────────┐
+                      │  ECS Fargate  │  ← Docker container
+                      │   (FastAPI)   │
                       └───────┬───────┘
                               │
                               ▼
@@ -71,26 +84,32 @@ A multi-agent AI system powered by LangGraph, LangChain, and OpenAI. The system 
 - **Database**: AWS DynamoDB
 - **Search**: Tavily API
 - **Image Generation**: Pollinations.ai
+- **Container**: Docker
+- **Cloud**: AWS (ECS Fargate, API Gateway, ECR, DynamoDB)
 
 ## Project Structure
 ```
-src/
-├── main.py              # FastAPI application & endpoints
-├── router.py            # Broodmother - LangGraph router
-├── database.py          # DynamoDB integration
-├── rag_service.py       # RAG service with ChromaDB
-├── nova_agent.py        # Web search agent
-├── wolf_agent.py        # Wikipedia agent
-├── sage_agent.py        # Math agent
-├── pixel_agent.py       # Image agent
-├── scribe_agent.py      # Document agent
-├── onyx_agent.py        # Code agent
-├── documents/           # Uploaded documents (gitignored)
-├── chroma_db/           # Vector database (gitignored)
-└── outputs/             # User-generated files (gitignored)
+├── src/
+│   ├── main.py              # FastAPI application & endpoints
+│   ├── router.py            # Broodmother - LangGraph router
+│   ├── database.py          # DynamoDB integration
+│   ├── rag_service.py       # RAG service with ChromaDB
+│   ├── nova_agent.py        # Web search agent
+│   ├── wolf_agent.py        # Wikipedia agent
+│   ├── sage_agent.py        # Math agent
+│   ├── pixel_agent.py       # Image agent
+│   ├── scribe_agent.py      # Document agent
+│   ├── onyx_agent.py        # Code agent
+│   ├── documents/           # Uploaded documents (gitignored)
+│   ├── chroma_db/           # Vector database (gitignored)
+│   └── outputs/             # User-generated files (gitignored)
+├── Dockerfile               # Container configuration
+├── requirements.txt         # Python dependencies
+└── scripts/
+    └── aws-control.sh       # Start/stop AWS services
 ```
 
-## Setup
+## Local Development
 
 ### 1. Clone the repository
 ```bash
@@ -133,12 +152,42 @@ uvicorn main:app --reload --host 0.0.0.0
 ### 7. Open API docs
 Navigate to `http://127.0.0.1:8000/docs`
 
+## Docker Deployment
+
+### Build the image
+```bash
+docker build -t broodmother-api .
+```
+
+### Run locally
+```bash
+docker run -p 8000:8000 \
+  -e OPENAI_API_KEY=your-key \
+  -e TAVILY_API_KEY=your-key \
+  -e AWS_ACCESS_KEY_ID=your-key \
+  -e AWS_SECRET_ACCESS_KEY=your-key \
+  -e AWS_DEFAULT_REGION=eu-west-2 \
+  broodmother-api
+```
+
+### Push to ECR
+```bash
+aws ecr get-login-password --region eu-west-2 --profile broodmother | docker login --username AWS --password-stdin 802939327066.dkr.ecr.eu-west-2.amazonaws.com
+docker tag broodmother-api:latest 802939327066.dkr.ecr.eu-west-2.amazonaws.com/broodmother-api:latest
+docker push 802939327066.dkr.ecr.eu-west-2.amazonaws.com/broodmother-api:latest
+```
+
 ## AWS Resources
 
 | Service | Resource | Purpose |
 |---------|----------|---------|
+| API Gateway | `broodmother-api` | HTTPS endpoint |
+| ECS | `broodmother-cluster` | Container orchestration |
+| ECS | `broodmother-service` | Running container |
+| ECS | `broodmother-task` | Task definition |
+| ECR | `broodmother-api` | Docker image registry |
 | DynamoDB | `broodmother_chat_history` | Persistent chat history |
-| IAM | `broodmother-user` | API access with DynamoDB permissions |
+| IAM | `broodmother-user` | API access permissions |
 
 ### DynamoDB Table Schema
 - **Table name**: `broodmother_chat_history`
@@ -146,25 +195,42 @@ Navigate to `http://127.0.0.1:8000/docs`
 - **Sort key**: `timestamp` (String)
 - **Billing mode**: On-demand
 
+## AWS Service Control
+
+### Start services
+```bash
+./scripts/aws-control.sh start
+```
+
+### Stop services (save costs)
+```bash
+./scripts/aws-control.sh stop
+```
+
+### Check status
+```bash
+./scripts/aws-control.sh status
+```
+
 ## Usage Examples
 
 ### Send a chat message
 ```bash
-curl -X POST "http://localhost:8000/chat" \
+curl -X POST "https://93vv9ogfgh.execute-api.eu-west-2.amazonaws.com/chat" \
   -H "Content-Type: application/json" \
   -d '{"message": "What is 25% of 200?"}'
 ```
 
 ### Upload a document
 ```bash
-curl -X POST "http://localhost:8000/documents/upload" \
+curl -X POST "https://93vv9ogfgh.execute-api.eu-west-2.amazonaws.com/documents/upload" \
   -F "file=@document.pdf" \
   -F "user_id=default"
 ```
 
 ### Search documents
 ```bash
-curl "http://localhost:8000/documents/search?query=refund%20policy&user_id=default"
+curl "https://93vv9ogfgh.execute-api.eu-west-2.amazonaws.com/documents/search?query=refund%20policy&user_id=default"
 ```
 
 ## Features
@@ -175,14 +241,6 @@ curl "http://localhost:8000/documents/search?query=refund%20policy&user_id=defau
 - ✅ RAG document search (ChromaDB)
 - ✅ User-specific file isolation
 - ✅ Auto-generated API documentation
-
-## Next Steps
-
-- [ ] AWS deployment (ECS Fargate, API Gateway)
-- [ ] S3 integration for document storage
-- [ ] Cognito authentication
-- [ ] React frontend
-
-## License
-
-MIT
+- ✅ Docker containerization
+- ✅ AWS deployment (ECS Fargate + API Gateway)
+- ✅ HTTPS endpoint
