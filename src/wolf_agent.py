@@ -114,7 +114,7 @@ def chat_with_wolf_stream(user_message: str, session_id: str = "default"):
         if hasattr(chunk, "content") and chunk.content:
             print(chunk.content, end="", flush=True)
             full_response += chunk.content
-            time.sleep(0.07)
+            time.sleep(0.00)
     
     print()
     
