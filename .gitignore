@@ -6,3 +6,4 @@ __pycache__/
 output/
 src/chroma_db
 src/documents
+scripts/

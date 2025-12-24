@@ -1,10 +1,17 @@
 import boto3
+import os
 from datetime import datetime
 from typing import Optional
 
-# Connect to DynamoDB using the broodmother profile
-session = boto3.Session(profile_name="broodmother", region_name="eu-west-2")
-dynamodb = session.resource("dynamodb")
+# Connect to DynamoDB - works with both local profile and AWS environment variables
+if os.environ.get("AWS_ACCESS_KEY_ID"):
+    # Running in Docker/AWS - use environment variables
+    dynamodb = boto3.resource("dynamodb", region_name="eu-west-2")
+else:
+    # Running locally - use profile
+    session = boto3.Session(profile_name="broodmother", region_name="eu-west-2")
+    dynamodb = session.resource("dynamodb")
+
 table = dynamodb.Table("broodmother_chat_history")
 
 
