@@ -21,6 +21,11 @@ A multi-agent AI system powered by LangGraph, LangChain, and OpenAI. The system 
                               │
                               ▼
                       ┌───────────────┐
+                      │     ALB       │  ← Fixed DNS (load balancer)
+                      └───────┬───────┘
+                              │
+                              ▼
+                      ┌───────────────┐
                       │  ECS Fargate  │  ← Docker container
                       │   (FastAPI)   │
                       └───────┬───────┘
@@ -85,7 +90,7 @@ A multi-agent AI system powered by LangGraph, LangChain, and OpenAI. The system 
 - **Search**: Tavily API
 - **Image Generation**: Pollinations.ai
 - **Container**: Docker
-- **Cloud**: AWS (ECS Fargate, API Gateway, ECR, DynamoDB)
+- **Cloud**: AWS (ECS Fargate, API Gateway, ALB, ECR, DynamoDB)
 
 ## Project Structure
 ```
@@ -182,6 +187,8 @@ docker push 802939327066.dkr.ecr.eu-west-2.amazonaws.com/broodmother-api:latest
 | Service | Resource | Purpose |
 |---------|----------|---------|
 | API Gateway | `broodmother-api` | HTTPS endpoint |
+| ALB | `broodmother-alb` | Load balancer with fixed DNS |
+| Target Group | `broodmother-tg` | Routes traffic to ECS tasks |
 | ECS | `broodmother-cluster` | Container orchestration |
 | ECS | `broodmother-service` | Running container |
 | ECS | `broodmother-task` | Task definition |
@@ -242,5 +249,6 @@ curl "https://93vv9ogfgh.execute-api.eu-west-2.amazonaws.com/documents/search?qu
 - ✅ User-specific file isolation
 - ✅ Auto-generated API documentation
 - ✅ Docker containerization
-- ✅ AWS deployment (ECS Fargate + API Gateway)
+- ✅ AWS deployment (ECS Fargate + ALB + API Gateway)
 - ✅ HTTPS endpoint
+- ✅ Fixed DNS with load balancing
