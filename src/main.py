@@ -150,3 +150,15 @@ def delete_docs(user_id:str):
     }
 
 
+@app.get("/sessions")
+def get_sessions():
+    from database import table
+    
+    response = table.scan(
+        ProjectionExpression="session_id"
+    )
+    
+    # Get unique session IDs
+    session_ids = list(set(item["session_id"] for item in response.get("Items", [])))
+    
+    return {"sessions": session_ids}
