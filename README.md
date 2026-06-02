@@ -2,7 +2,7 @@
 
 A multi-agent AI system powered by LangGraph, LangChain, and OpenAI. The system intelligently routes user queries to specialized AI agents, each with distinct capabilities and personalities.
 
-## Live API
+## Live API - currently disabled due to billing reasons
 
 **Production URL:** `https://93vv9ogfgh.execute-api.eu-west-2.amazonaws.com`
 
